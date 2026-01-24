@@ -1,0 +1,6 @@
+opencv-python>=4.8.0
+mediapipe>=0.10.30
+ultralytics>=8.1.0
+numpy>=1.26.0
+pydantic>=2.5.0
+protobuf<5.0.0

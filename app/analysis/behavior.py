@@ -1,58 +1,79 @@
 from collections import deque
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from app.core.schemas import FaceResult, DetectionResult, AnalysisSignal, BehaviorType, RiskLevel
 from app.config import settings
 
 class BehaviorAnalyzer:
     def __init__(self):
         self.history_size = 30 # keep 1 second of history at 30fps
-        self.face_history = deque(maxlen=self.history_size)
-        self.object_history = deque(maxlen=self.history_size)
-        
         # State Counters
         self.frames_no_face = 0
         self.frames_looking_away = 0
+        self.frames_pitch_violation = 0
+
+        # Handlers Map: Maps "source_name" to "handler_method"
+        self._handlers = {
+            "face": self._analyze_face,
+            "object": self._analyze_objects,
+            "audio": self._analyze_audio
+        }
         
+    def register_handler(self, source: str, handler_func):
+        """Allow dynamic registration of new analysis modules"""
+        self._handlers[source] = handler_func
+
     def _analyze_face(self, face_results: List[FaceResult]) -> List[AnalysisSignal]:
         signals = []
-        
+        if not face_results: 
+            return signals
+            
         # Check presence
-        if not face_results or not face_results[0].face_present:
+        if not face_results[0].face_present:
             self.frames_no_face += 1
             if self.frames_no_face > settings.risk.max_frames_missing_face:
                  signals.append(AnalysisSignal(
                      behavior_type=BehaviorType.FACE_NOT_VISIBLE,
-                     detected_at=0, # Timestamp to be filled by caller or now
+                     detected_at=0,
                      details=f"Face missing for {self.frames_no_face} frames",
                      severity=RiskLevel.MEDIUM
                  ))
         else:
             self.frames_no_face = 0 # Reset
             
-            # Check Gaze (only if face is present)
             face = face_results[0]
-            # Thresholds for looking away (normalized -1 to 1)
-            # 0.4 roughly corresponds to 30-40 degrees if we normalized by 90
-            # Thresholds for looking away (normalized -1 to 1)
-            # 0.25 roughly corresponds to ~22 degrees (Sensitivity Increased)
-            THRESHOLD = 0.22 
-            if abs(face.yaw) > THRESHOLD or abs(face.pitch) > THRESHOLD:
+            
+            # Check Gaze (Left/Right)
+            YAW_THRESHOLD = settings.face.yaw_threshold
+            if abs(face.yaw) > YAW_THRESHOLD:
                 self.frames_looking_away += 1
                 if self.frames_looking_away > settings.risk.max_frames_looking_away:
                      signals.append(AnalysisSignal(
                          behavior_type=BehaviorType.LOOKING_AWAY,
                          detected_at=0,
-                         details=f"Extensive looking away ({face.yaw:.2f}, {face.pitch:.2f})",
+                         details=f"Extensive looking away ({face.yaw:.2f})",
                          severity=RiskLevel.LOW
                      ))
             else:
                 self.frames_looking_away = 0
                 
+            # Check Pitch (Up/Down)
+            PITCH_THRESHOLD = settings.face.pitch_threshold
+            if abs(face.pitch) > PITCH_THRESHOLD:
+                self.frames_pitch_violation += 1
+                if self.frames_pitch_violation > settings.risk.max_frames_pitch_violation:
+                     signals.append(AnalysisSignal(
+                         behavior_type=BehaviorType.PITCH_VIOLATION,
+                         detected_at=0,
+                         details=f"Looking Up/Down detected ({face.pitch:.2f})",
+                         severity=RiskLevel.MEDIUM
+                     ))
+            else:
+                 self.frames_pitch_violation = 0
+                
         return signals
 
     def _analyze_objects(self, detections: List[DetectionResult]) -> List[AnalysisSignal]:
         signals = []
-        
         person_count = 0
         
         for det in detections:
@@ -66,11 +87,15 @@ class BehaviorAnalyzer:
                     details="Mobile Phone detected",
                     severity=RiskLevel.HIGH
                 ))
+            
+            if det.label == "headphone" or det.label == "headset":
+                 signals.append(AnalysisSignal(
+                    behavior_type=BehaviorType.HEADPHONE_DETECTED,
+                    detected_at=0,
+                    details="Headphones detected",
+                    severity=RiskLevel.HIGH
+                ))
         
-        # Note: YOLO often counts the user as a person. 
-        # So we expect 1 person. If > 1, multiple people.
-        # But if face is missing, we might have 0 people? 
-        # Logic: If > 1 person seen -> Multiple people risk
         if person_count > 1:
             signals.append(AnalysisSignal(
                 behavior_type=BehaviorType.PERSON_LIMIT_VIOLATION,
@@ -81,16 +106,28 @@ class BehaviorAnalyzer:
             
         return signals
 
-    def analyze(self, timestamp: float, face_results: List[FaceResult], object_results: List[DetectionResult]) -> List[AnalysisSignal]:
+    def _analyze_audio(self, audio_result: Any) -> List[AnalysisSignal]:
+        signals = []
+        if audio_result and audio_result.speech_detected:
+            signals.append(AnalysisSignal(
+                behavior_type=BehaviorType.AUDIO_DETECTED,
+                detected_at=0,
+                details=f"Audio/Speech Detected ({audio_result.decibels:.1f} dB)",
+                severity=RiskLevel.HIGH
+            ))
+        return signals
+
+    def analyze(self, timestamp: float, results_map: Dict[str, Any]) -> List[AnalysisSignal]:
+        """
+        Generic analysis entry point.
+        Iterates through the results_map and dispatches to registered handlers.
+        """
         signals = []
         
-        # Analyze Face
-        face_signals = self._analyze_face(face_results)
-        signals.extend(face_signals)
-        
-        # Analyze Objects
-        obj_signals = self._analyze_objects(object_results)
-        signals.extend(obj_signals)
+        for source, data in results_map.items():
+            if source in self._handlers and data is not None:
+                new_signals = self._handlers[source](data)
+                signals.extend(new_signals)
         
         # Stamp time
         for s in signals:

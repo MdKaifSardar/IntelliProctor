@@ -7,8 +7,8 @@ from app.config import settings
 class ObjectDetector(IObjectDetector):
     def __init__(self):
         # Load model (will auto-download if not present)
-        self.model = YOLO(settings.object_detector.model_path)
-        self.target_classes = set(settings.object_detector.target_classes)
+        self.model = YOLO(settings.objects.model_path)
+        self.target_classes = set(settings.objects.target_classes)
         self.names = self.model.names if hasattr(self.model, 'names') else {}
         
     def detect(self, frame_data: FrameData) -> List[DetectionResult]:
@@ -16,7 +16,7 @@ class ObjectDetector(IObjectDetector):
         results = self.model.predict(
             frame_data.frame, 
             verbose=False, 
-            conf=settings.object_detector.confidence_threshold,
+            conf=settings.objects.confidence_threshold,
             classes=list(self.target_classes) # Filter at inference level if possible
         )
         

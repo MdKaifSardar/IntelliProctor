@@ -19,8 +19,8 @@ class FaceDetector(IFaceDetector):
             output_face_blendshapes=False,
             output_facial_transformation_matrixes=False, # Can be true for easier pose!
             num_faces=1,
-            min_face_detection_confidence=settings.face_detector.min_detection_confidence,
-            min_face_presence_confidence=settings.face_detector.min_tracking_confidence,
+            min_face_detection_confidence=settings.face.min_detection_confidence,
+            min_face_presence_confidence=settings.face.min_tracking_confidence,
         )
         self.detector = vision.FaceLandmarker.create_from_options(options)
         
@@ -37,15 +37,27 @@ class FaceDetector(IFaceDetector):
         # Nose tip: 1, Chin: 152, Left eye left corner: 33, Right eye right corner: 263, Left Mouth: 61, Right Mouth: 291
         landmark_indices = [33, 263, 1, 61, 291, 199]
         
+        # Generic 3D Face Model (X, Y, Z)
+        # Corresponding to indices: [33, 263, 1, 61, 291, 199]
+        # (Left Eye, Right Eye, Nose, Left Mouth, Right Mouth, Chin)
+        # Coordinates in arbitrary units, centered at Nose tip (0,0,0)
+        # Y-axis points DOWN (matching image coords)
+        face_3d = np.array([
+            [-225.0, -170.0, -135.0], # 33: Left Eye
+            [ 225.0, -170.0, -135.0], # 263: Right Eye
+            [   0.0,    0.0,    0.0], # 1: Nose
+            [-150.0,  150.0, -125.0], # 61: Left Mouth
+            [ 150.0,  150.0, -125.0], # 291: Right Mouth
+            [   0.0,  330.0,  -65.0]  # 199: Chin
+        ], dtype=np.float64)
+
         for idx in landmark_indices:
             lm = landmarks[idx]
-            # Tasks API landmarks have x, y, z. x,y are normalized [0,1].
             x, y = int(lm.x * img_w), int(lm.y * img_h)
             face_2d.append([x, y])
-            face_3d.append([x, y, lm.z * 3000]) # approximate depth multiplier
-
+            # face_3d is now static, no appending needed
+            
         face_2d = np.array(face_2d, dtype=np.float64)
-        face_3d = np.array(face_3d, dtype=np.float64)
 
         # Camera matrix
         focal_length = 1 * img_w
@@ -96,7 +108,8 @@ class FaceDetector(IFaceDetector):
                 face_present=True,
                 yaw=yaw,
                 pitch=pitch,
-                roll=roll
+                roll=roll,
+                landmarks=face_landmarks # Pass raw landmarks for visualization
             ))
             
         return face_results

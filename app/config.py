@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel, Field
-from typing import Tuple
+from typing import List, Set
 
 class CameraConfig(BaseModel):
     id: int = Field(0, description="Camera Device ID")
@@ -12,35 +12,53 @@ class FaceDetectorConfig(BaseModel):
     min_detection_confidence: float = 0.5
     min_tracking_confidence: float = 0.5
     face_mesh_refine_landmarks: bool = True
+    
+    # Sensitivity (Normalized -1.0 to 1.0)
+    yaw_threshold: float = 0.20   # Left/Right
+    pitch_threshold: float = 0.20 # Up/Down
+    visualize_landmarks: bool = True # Show face mesh
 
 class ObjectDetectorConfig(BaseModel):
     model_path: str = "yolov8n.pt"
     confidence_threshold: float = 0.5
-    target_classes: list[int] = Field(
-        default=[0, 67, 73], 
-        description="COCO class IDs: 0=person, 67=cell phone, 73=laptop (optional adjustment needed)"
-        # Note: YOLO COCO: 0:person, 67:cell phone. 
-        # Check specific model classes. 67 is cell phone in COCO.
-    )
+    # targeted classes: person (0), cell phone (67)
+    # Note: Headphones not standard in COCO, we will simulate or require custom model
+    target_classes: list[int] = [0, 67] 
+
+class AudioConfig(BaseModel):
+    enabled: bool = True
+    threshold_rms: float = 0.01 # Sensitivity for noise
+    sample_rate: int = 16000
+    block_size: int = 1024
 
 class RiskConfig(BaseModel):
     # Cooldowns in seconds
     alert_cooldown: float = 2.0
     
     # Thresholds (frames)
-    max_frames_missing_face: int = 30  # ~1 sec at 30fps
-    max_frames_looking_away: int = 3  # ~0.1 sec - nearly instant
+    max_frames_missing_face: int = 30  # ~1 sec
+    max_frames_looking_away: int = 3   # ~0.1 sec (Yaw)
+    max_frames_pitch_violation: int = 5 # ~0.15 sec (Pitch)
     
     # Weights for scoring (0.0 to 1.0)
-    weight_phone: float = 1.0     # Critical
-    weight_multiple_faces: float = 0.8 # High
-    weight_no_face: float = 0.6   # Medium
-    weight_gaze: float = 0.5      # Solid Medium Risk (was 0.4)
+    weight_phone: float = 1.0     
+    weight_multiple_faces: float = 0.8
+    weight_no_face: float = 0.6   
+    weight_gaze: float = 0.5      
+    weight_pitch: float = 0.5     # New
+    weight_audio: float = 0.7     # New
+    weight_headphone: float = 0.9 # New
 
 class AppConfig(BaseModel):
+    # Dynamic Module Control
+    active_modules: Set[str] = Field(
+        default_factory=lambda: {"face", "object", "audio"}
+    )
+    
     camera: CameraConfig = Field(default_factory=CameraConfig)
-    face_detector: FaceDetectorConfig = Field(default_factory=FaceDetectorConfig)
-    object_detector: ObjectDetectorConfig = Field(default_factory=ObjectDetectorConfig)
+    face: FaceDetectorConfig = Field(default_factory=FaceDetectorConfig)
+    objects: ObjectDetectorConfig = Field(default_factory=ObjectDetectorConfig)
+    audio: AudioConfig = Field(default_factory=AudioConfig)
     risk: RiskConfig = Field(default_factory=RiskConfig)
     
     log_level: str = "INFO"
@@ -48,5 +66,4 @@ class AppConfig(BaseModel):
     class Config:
         env_prefix = "PROCTOR_"
 
-# Global Config Instance
 settings = AppConfig()

@@ -1,7 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from enum import Enum
 from typing import List, Optional, Tuple, Any
-import numpy as np
 
 class RiskLevel(str, Enum):
     LOW = "LOW"
@@ -9,17 +8,18 @@ class RiskLevel(str, Enum):
     HIGH = "HIGH"
 
 class BehaviorType(str, Enum):
-    LOOKING_AWAY = "LOOKING_AWAY"
+    LOOKING_AWAY = "LOOKING_AWAY"     # Left/Right
+    PITCH_VIOLATION = "PITCH_VIOLATION" # Up/Down
     PHONE_DETECTED = "PHONE_DETECTED"
+    HEADPHONE_DETECTED = "HEADPHONE_DETECTED"
     PERSON_LIMIT_VIOLATION = "PERSON_LIMIT_VIOLATION"
     FACE_NOT_VISIBLE = "FACE_NOT_VISIBLE"
-    AUDIO_DETECTED = "AUDIO_DETECTED" # Future proofing
+    AUDIO_DETECTED = "AUDIO_DETECTED"
 
 class FrameData(BaseModel):
     frame_id: int
     timestamp: float
-    frame: Any  # numpy array, but Any to avoid pydantic validation overhead on image data
-    
+    frame: Any  # numpy array
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class DetectionResult(BaseModel):
@@ -29,10 +29,15 @@ class DetectionResult(BaseModel):
 
 class FaceResult(BaseModel):
     face_present: bool
-    landmarks: Optional[List[Tuple[float, float]]] = None # Normalized coordinates
+    landmarks: Optional[Any] = None 
     yaw: Optional[float] = None
     pitch: Optional[float] = None
     roll: Optional[float] = None
+
+class AudioResult(BaseModel):
+    speech_detected: bool
+    rms_level: float
+    decibels: float
 
 class AnalysisSignal(BaseModel):
     behavior_type: BehaviorType

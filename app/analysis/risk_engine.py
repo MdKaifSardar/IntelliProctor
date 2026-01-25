@@ -32,6 +32,12 @@ class RiskEngine:
                 frame_score += settings.risk.weight_no_face
             elif signal.behavior_type == BehaviorType.LOOKING_AWAY:
                 frame_score += settings.risk.weight_gaze
+            elif signal.behavior_type == BehaviorType.PITCH_VIOLATION:
+                frame_score += settings.risk.weight_pitch
+            elif signal.behavior_type == BehaviorType.AUDIO_DETECTED:
+                frame_score += settings.risk.weight_audio
+            elif signal.behavior_type == BehaviorType.HEADPHONE_DETECTED:
+                frame_score += settings.risk.weight_headphone
                 
         # 2. Determine Risk Level
         # Simple thresholding

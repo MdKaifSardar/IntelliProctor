@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from typing import List
 from app.core.schemas import FrameData, DetectionResult, FaceResult, RiskEvent, RiskLevel
+from app.config import settings
 
 class Visualizer:
     def __init__(self):
@@ -29,16 +30,29 @@ class Visualizer:
             if face.face_present:
                  # Draw simple gaze indicator if pose available
                 if face.yaw is not None:
-                    # Visual feedback for head turn
-                    center_x, center_y = frame.shape[1] // 2, frame.shape[0] // 2
-                    # Simple line to show direction
-                    end_x = int(center_x + (face.yaw * 100)) # Scale for vis
-                    end_y = int(center_y + (face.pitch * 100))
-                    # cv2.arrowedLine(frame, (center_x, center_y), (end_x, end_y), (0, 255, 255), 2)
-                    
                     status = "Frontal"
-                    if abs(face.yaw) > 0.22: status = "Side Looking"
+                    if abs(face.yaw) > settings.face.yaw_threshold: status = "Side Looking"
                     cv2.putText(frame, f"Head: {status} ({face.yaw:.2f})", (30, 80), self.font, 0.6, (255, 255, 0), 2)
+
+                # Draw Landmarks if enabled
+                if settings.face.visualize_landmarks and face.landmarks:
+                    h, w, _ = frame.shape
+                    
+                    # Key points to highlight (Nose, Chin, Left Eye, Right Eye, Mouth L, Mouth R)
+                    key_indices = [1, 152, 33, 263, 61, 291]
+                    
+                    for idx, lm in enumerate(face.landmarks):
+                        x, y = int(lm.x * w), int(lm.y * h)
+                        
+                        if idx in key_indices:
+                            # Highlight key points (Larger Yellow Dot)
+                            cv2.circle(frame, (x, y), 4, (0, 255, 255), -1)
+                        else:
+                            # Standard mesh (Small White Dot, sparse drawing for perf?)
+                            # Drawing all 478 points might be busy, but let's do it as requested "dots layout"
+                            # Optimization: Draw every n-th point to avoid clutter or draw all if specific visuals needed
+                            if idx % 5 == 0: # Light mesh
+                                cv2.circle(frame, (x, y), 1, (200, 200, 200), -1)
 
     def draw_risk(self, frame: np.ndarray, risk_event: RiskEvent):
         color = self.colors.get(risk_event.risk_level, (255, 255, 255))

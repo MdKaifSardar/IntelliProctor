@@ -4,3 +4,5 @@ ultralytics>=8.1.0
 numpy>=1.26.0
 pydantic>=2.5.0
 protobuf<5.0.0
+sounddevice>=0.4.6
+scipy>=1.10.0

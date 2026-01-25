@@ -12,6 +12,14 @@ from mediapipe.tasks.python import vision
 
 class FaceDetector(IFaceDetector):
     def __init__(self):
+        # Calibration State
+        self.calibration_frames = 0
+        self.calibration_target = 30 # Number of frames to average
+        self.baseline_yaw = 0.0
+        self.baseline_pitch = 0.0
+        self.baseline_roll = 0.0
+        self.is_calibrated = False
+        
         # Create FaceLandmarker options
         base_options = python.BaseOptions(model_asset_path='app/models/face_landmarker.task')
         options = vision.FaceLandmarkerOptions(
@@ -42,13 +50,19 @@ class FaceDetector(IFaceDetector):
         # (Left Eye, Right Eye, Nose, Left Mouth, Right Mouth, Chin)
         # Coordinates in arbitrary units, centered at Nose tip (0,0,0)
         # Y-axis points DOWN (matching image coords)
+        # Generic 3D Face Model (X, Y, Z)
+        # Corresponding to indices: [33, 263, 1, 61, 291, 199]
+        # (Left Eye, Right Eye, Nose, Left Mouth, Right Mouth, Chin)
+        # Coordinates in arbitrary units, centered at Nose tip (0,0,0)
+        # Y-axis points DOWN (matching image coords)
+        # Z-axis points INTO screen (Standard OpenCV): Nose=0, Eyes=Positive (Further)
         face_3d = np.array([
-            [-225.0, -170.0, -135.0], # 33: Left Eye
-            [ 225.0, -170.0, -135.0], # 263: Right Eye
+            [-225.0, -170.0,  135.0], # 33: Left Eye
+            [ 225.0, -170.0,  135.0], # 263: Right Eye
             [   0.0,    0.0,    0.0], # 1: Nose
-            [-150.0,  150.0, -125.0], # 61: Left Mouth
-            [ 150.0,  150.0, -125.0], # 291: Right Mouth
-            [   0.0,  330.0,  -65.0]  # 199: Chin
+            [-150.0,  150.0,  125.0], # 61: Left Mouth
+            [ 150.0,  150.0,  125.0], # 291: Right Mouth
+            [   0.0,  330.0,   65.0]  # 199: Chin
         ], dtype=np.float64)
 
         for idx in landmark_indices:
@@ -86,6 +100,9 @@ class FaceDetector(IFaceDetector):
         yaw = angles[1]
         roll = angles[2]
         
+        # DEBUG: Print raw angles to terminal to diagnose offset
+        # print(f"DEBUG RAW -> Pitch: {pitch:.2f}, Yaw: {yaw:.2f}, Roll: {roll:.2f}")
+        
         return yaw / 90.0, pitch / 90.0, roll / 90.0
 
     def process(self, frame_data: FrameData) -> List[FaceResult]:
@@ -102,7 +119,29 @@ class FaceDetector(IFaceDetector):
         face_results = []
         for face_landmarks in detection_result.face_landmarks:
             # face_landmarks is a list of NormalizedLandmark
-            yaw, pitch, roll = self._calculate_head_pose(face_landmarks, image.shape)
+            # Raw values (Normalized but biased)
+            raw_yaw, raw_pitch, raw_roll = self._calculate_head_pose(face_landmarks, image.shape)
+            
+            # Auto-Calibration (First N frames)
+            if not self.is_calibrated:
+                self.baseline_yaw += raw_yaw
+                self.baseline_pitch += raw_pitch
+                self.baseline_roll += raw_roll
+                self.calibration_frames += 1
+                
+                if self.calibration_frames >= self.calibration_target:
+                    self.baseline_yaw /= self.calibration_target
+                    self.baseline_pitch /= self.calibration_target
+                    self.baseline_roll /= self.calibration_target
+                    self.is_calibrated = True
+                
+                # Use raw values during calibration
+                yaw, pitch, roll = raw_yaw, raw_pitch, raw_roll
+            else:
+                # Apply Calibration (Relative Pose)
+                yaw = raw_yaw - self.baseline_yaw
+                pitch = raw_pitch - self.baseline_pitch
+                roll = raw_roll - self.baseline_roll
             
             face_results.append(FaceResult(
                 face_present=True,

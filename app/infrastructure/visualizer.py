@@ -32,7 +32,13 @@ class Visualizer:
                 if face.yaw is not None:
                     status = "Frontal"
                     if abs(face.yaw) > settings.face.yaw_threshold: status = "Side Looking"
-                    cv2.putText(frame, f"Head: {status} ({face.yaw:.2f})", (30, 80), self.font, 0.6, (255, 255, 0), 2)
+                    
+                    # Main Status
+                    cv2.putText(frame, f"Head: {status}", (30, 80), self.font, 0.7, (255, 255, 0), 2)
+                    
+                    # Details (Y=Yaw, P=Pitch, R=Roll)
+                    stats = f"Y:{face.yaw:.2f} P:{face.pitch:.2f} R:{face.roll:.2f}"
+                    cv2.putText(frame, stats, (30, 110), self.font, 0.5, (200, 200, 200), 1)
 
                 # Draw Landmarks if enabled
                 if settings.face.visualize_landmarks and face.landmarks:

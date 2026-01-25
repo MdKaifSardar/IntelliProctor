@@ -40,9 +40,24 @@ Here we track the technical evolution, challenges, and decisions made during the
   2.  **Temporal Filter**: Reduced `max_frames_looking_away` from `15` (0.5s) to `3` (0.1s) for "snappier" response.
   3.  **Risk Weight**: Increased Gaze weight from `0.4` to `0.5` to ensure it solidly triggers a MEDIUM risk event.
 
+#### **Phase 6: Advanced Features & Refinement**
+
+- **Audio Detection**:
+  - Integrated `sounddevice` for real-time RMS amplitude monitoring.
+  - Flags audio spikes (speech/noise) as `AUDIO_DETECTED` events.
+- **Pitch Detection**:
+  - Expanded 3D head pose logic to monitoring Pitch (Up/Down).
+  - Essential for detecting notes hidden on keyboards or laps.
+- **Auto-Calibration**:
+  - **Problem**: Users have different "neutral" head positions; some sit higher/lower.
+  - **Solution**: First 30 frames are averaged to calculate a baseline (zero) pose. All subsequent tracking is relative to this baseline.
+- **System Controller**:
+  - Refactored `main.py` into a `SystemController` class.
+  - Enables dynamic loading of modules based on `config.py` (e.g., turn off Audio if no mic).
+
 ## 🔮 Future Roadmap
 
-- [ ] **Audio Analysis**: Add microphone support to detect speaking/whispering.
+- [x] **Audio Analysis**: Add microphone support to detect speaking/whispering.
 - [ ] **Session Recording**: Save clips of high-risk events for review.
 - [ ] **Web Dashboard**: Create a React/FastAPI frontend for remote proctoring.
 - [ ] **Identity Verification**: Add initial face matching with ID card.

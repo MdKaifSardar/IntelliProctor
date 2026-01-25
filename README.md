@@ -8,11 +8,15 @@ A modular, computer-vision-based **decision support system** designed to assist 
 
 - **Real-time Analysis**: Processes webcam feed at ~30 FPS.
 - **Face & Gaze Tracking**: Detects facial presence and head pose (yaw/pitch) to identify looking-away behaviors.
+  - **Auto-Calibration**: Zeroes out head pose on startup for accurate relative tracking.
+- **Audio Detection**: Monitors microphone for high volume or speech patterns.
 - **Object Detection**: Identifies potential malpractice objects:
   - 📱 Mobile Phones
   - 👥 Multiple People
+  - 🎧 Headphones (Experimental)
 - **Risk Engine**:
   - Aggregates temporal signals (ignores momentary glitches).
+  - Flags `PITCH` (Looking Up/Down) and `AUDIO` violations.
   - Calculates a generic Risk Score.
   - Triggers `LOW`, `MEDIUM`, or `HIGH` risk events with explainable reasons.
 - **Visual Overlay**: Provides immediate visual feedback (bounding boxes, status text) and risk alerts.
@@ -91,9 +95,10 @@ DEVLOG.md               # Development history & notes
 
 You can tune sensitivity in `app/config.py`:
 
-- **Risk Thresholds**: Adjust `weight_phone`, `weight_gaze`, etc.
+- **Active Modules**: Enable/disable `face`, `audio`, `object` modules dynamically.
+- **Risk Thresholds**: Adjust `weight_phone`, `weight_gaze`, `audio.threshold_rms`, etc.
 - **Timing**: Adjust `max_frames_looking_away` (lower = faster detection).
-- **Sensitivity**: Adjust angles in `behavior.py`.
+- **Visualization**: Toggle `visualize_landmarks` for debug dots.
 
 ## 🤝 Contributing
 

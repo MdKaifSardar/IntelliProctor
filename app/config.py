@@ -24,6 +24,7 @@ class ObjectDetectorConfig(BaseModel):
     # targeted classes: person (0), cell phone (67)
     # Note: Headphones not standard in COCO, we will simulate or require custom model
     target_classes: list[int] = [0, 67] 
+    forbidden_objects: list[str] = ["cell phone", "mobile phone", "headphone", "headset"] # Labels to trigger High Risk 
 
 class AudioConfig(BaseModel):
     enabled: bool = True

@@ -1,14 +1,23 @@
 import sys
 # Hack: Disable tensorflow import to prevent protobuf conflict with MediaPipe
-# The user's environment has an incompatible tensorflow/protobuf combo.
 sys.modules["tensorflow"] = None
+from PyQt6.QtWidgets import QApplication
+from app.ui.main_window import MainWindow
+from app.infrastructure.logger import logger
 
-from app.main import main
+def main():
+    logger.info("Starting Proctoring Desktop App...")
+    
+    app = QApplication(sys.argv)
+    
+    # Optional: Set global styles/theme here
+    
+    window = MainWindow()
+    window.show()
+    
+    exit_code = app.exec()
+    logger.info(f"Application exited with code {exit_code}")
+    sys.exit(exit_code)
 
 if __name__ == "__main__":
-    try:
-        main()
-    except ImportError as e:
-        print(f"Error importing app modules: {e}")
-        print("Make sure you are running from the root directory and 'app' is accessible.")
-        sys.exit(1)
+    main()

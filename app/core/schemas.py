@@ -15,6 +15,7 @@ class BehaviorType(str, Enum):
     PERSON_LIMIT_VIOLATION = "PERSON_LIMIT_VIOLATION"
     FACE_NOT_VISIBLE = "FACE_NOT_VISIBLE"
     AUDIO_DETECTED = "AUDIO_DETECTED"
+    OBJECT_DETECTED = "OBJECT_DETECTED" # Generic forbidden object
 
 class FrameData(BaseModel):
     frame_id: int
@@ -33,6 +34,8 @@ class FaceResult(BaseModel):
     yaw: Optional[float] = None
     pitch: Optional[float] = None
     roll: Optional[float] = None
+    is_calibrating: bool = False
+    calibration_warning: Optional[str] = None
 
 class AudioResult(BaseModel):
     speech_detected: bool

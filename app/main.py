@@ -19,12 +19,21 @@ def main():
     # Start Modules
     controller.start()
     
+    # Setup Window and Callback
+    window_name = "Proctoring System - Monitor"
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setMouseCallback(window_name, controller.on_mouse_click)
+    
     logger.info("System Running. Press 'q' to exit.")
 
     try:
         while True:
-            # Step returns the visualized frame
-            vis_frame = controller.step()
+            # Step returns (visualized frame, results_map)
+            step_result = controller.step()
+            if step_result is None:
+                continue
+            
+            vis_frame, _ = step_result
             
             if vis_frame is not None:
                 cv2.imshow("Proctoring System - Monitor", vis_frame)

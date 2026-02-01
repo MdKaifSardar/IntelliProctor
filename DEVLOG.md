@@ -61,3 +61,23 @@ Here we track the technical evolution, challenges, and decisions made during the
 - [ ] **Session Recording**: Save clips of high-risk events for review.
 - [ ] **Web Dashboard**: Create a React/FastAPI frontend for remote proctoring.
 - [ ] **Identity Verification**: Add initial face matching with ID card.
+
+#### **Phase 7: Security Hardening**
+
+- **Hybrid Calibration**:
+  - Replaced automatic startup calibration with a **Manual Trigger** ("RECALIBRATE" button).
+  - **Anti-Cheat Lock**: Implemented a safety check that rejects calibration if the user is looking more than 20 degrees away from the center. This prevents users from "gaming" the system by calibrating to a side angle.
+- Implemented a `stats_signal` in the Worker thread to ship dictionary data to the UI efficiently.
+- **Bug Fix**:
+  - Fixed `TypeError: cannot unpack non-iterable NoneType object` in `worker.py` and `main.py` caused by `SystemController.step()` returning `None` during startup/lag.
+- **Dynamic Object Watchlist**:
+  - Refactored `BehaviorAnalyzer` to use a config-driven `forbidden_objects` list instead of hardcoded strings.
+
+#### **Phase 8: Desktop Application (PyQt6)**
+
+- **UI Migration**:
+  - Transitioned from simple `cv2.imshow` scripts to a robust **PyQt6** GUI.
+  - Implemented **Worker Thread Pattern** (`ProctorWorker`) to decouple the 30FPS Computer Vision loop from the UI event loop, ensuring a responsive interface.
+  - Added **Sidebar Controls** for native "Recalibrate" and "End Exam" actions.
+- **Headless Backend**:
+  - Refactored `SystemController` to operate without direct window management, making it suitable for embedding in any GUI framework (or Web API in the future).

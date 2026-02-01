@@ -77,22 +77,15 @@ class BehaviorAnalyzer:
         person_count = 0
         
         for det in detections:
-            if det.label == "person":
+            label = det.label.lower()
+            
+            if label == "person":
                 person_count += 1
-            
-            if det.label == "cell phone":
+            elif label in settings.objects.forbidden_objects:
                 signals.append(AnalysisSignal(
-                    behavior_type=BehaviorType.PHONE_DETECTED,
+                    behavior_type=BehaviorType.OBJECT_DETECTED,
                     detected_at=0,
-                    details="Mobile Phone detected",
-                    severity=RiskLevel.HIGH
-                ))
-            
-            if det.label == "headphone" or det.label == "headset":
-                 signals.append(AnalysisSignal(
-                    behavior_type=BehaviorType.HEADPHONE_DETECTED,
-                    detected_at=0,
-                    details="Headphones detected",
+                    details=f"Forbidden object detected: {det.label}",
                     severity=RiskLevel.HIGH
                 ))
         

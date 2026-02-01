@@ -24,7 +24,7 @@ class RiskEngine:
         for signal in signals:
             reasons.add(signal.details)
             
-            if signal.behavior_type == BehaviorType.PHONE_DETECTED:
+            if signal.behavior_type == BehaviorType.PHONE_DETECTED or signal.behavior_type == BehaviorType.OBJECT_DETECTED:
                 frame_score += settings.risk.weight_phone
             elif signal.behavior_type == BehaviorType.PERSON_LIMIT_VIOLATION:
                 frame_score += settings.risk.weight_multiple_faces

@@ -20,11 +20,16 @@ A modular, computer-vision-based **decision support system** designed to assist 
   - Calculates a generic Risk Score.
   - Triggers `LOW`, `MEDIUM`, or `HIGH` risk events with explainable reasons.
 - **Visual Overlay**: Provides immediate visual feedback (bounding boxes, status text) and risk alerts.
+- **Proctor Sidebar**:
+  - **Event Log**: A scrollable history of all risk events and system statuses.
+  - **Calibration Progress**: Visual bar showing synchronization status.
+  - **Real-time Telemetry**: Live view of Head Pose (Yaw/Pitch) and Audio Levels.
 - **Privacy-First**: Does not store video feeds or identify individuals (no facial recognition, only detection).
 
 ## 🛠️ Tech Stack
 
 - **Language**: Python 3.10+
+- **GUI Framework**: PyQt6 (Desktop Application)
 - **Computer Vision**:
   - **MediaPipe Tasks**: Robust Face Landmark detection.
   - **OpenCV**: Image processing and visualization.

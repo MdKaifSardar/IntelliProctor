@@ -18,6 +18,12 @@ class BehaviorAnalyzer:
             "audio": self._analyze_audio
         }
         
+    def reset(self):
+        """Resets all internal history counters"""
+        self.frames_no_face = 0
+        self.frames_looking_away = 0
+        self.frames_pitch_violation = 0
+
     def register_handler(self, source: str, handler_func):
         """Allow dynamic registration of new analysis modules"""
         self._handlers[source] = handler_func

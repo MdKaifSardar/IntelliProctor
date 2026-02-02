@@ -6,3 +6,4 @@ pydantic>=2.5.0
 protobuf<5.0.0
 sounddevice>=0.4.6
 scipy>=1.10.0
+PyQt6>=6.6.1

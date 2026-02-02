@@ -9,6 +9,12 @@ class RiskEngine:
         self.current_risk_level = RiskLevel.LOW
         self.accumulated_score = 0.0
         
+    def reset(self):
+        """Resets risk state and cooldowns"""
+        self.last_alert_time = 0
+        self.current_risk_level = RiskLevel.LOW
+        self.accumulated_score = 0.0
+
     def process(self, signals: List[AnalysisSignal]) -> Optional[RiskEvent]:
         current_time = time.time()
         

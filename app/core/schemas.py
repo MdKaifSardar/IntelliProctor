@@ -30,12 +30,15 @@ class DetectionResult(BaseModel):
 
 class FaceResult(BaseModel):
     face_present: bool
-    landmarks: Optional[Any] = None 
-    yaw: Optional[float] = None
-    pitch: Optional[float] = None
-    roll: Optional[float] = None
+    yaw: Optional[float] = None # Normalized -1.0 to 1.0 (0=Center)
+    pitch: Optional[float] = None # Normalized -1.0 to 1.0 (0=Center)
+    roll: Optional[float] = None  # Normalized (0=Center)
+    landmarks: Optional[Any] = None # MediaPipe landmarks
+    
+    # Calibration Info
     is_calibrating: bool = False
     calibration_warning: Optional[str] = None
+    calibration_progress: float = 0.0 # 0.0 to 1.0
 
 class AudioResult(BaseModel):
     speech_detected: bool

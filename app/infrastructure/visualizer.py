@@ -46,18 +46,9 @@ class Visualizer:
                             pass
 
     def draw_risk(self, frame: np.ndarray, risk_event: RiskEvent):
-        color = self.colors.get(risk_event.risk_level, (255, 255, 255))
-        
-        # Risk Header
-        cv2.putText(frame, f"RISK: {risk_event.risk_level.value}", (10, 30), 
-                    self.font, 1, color, 2)
-        
-        # Reasons
-        y_offset = 60
-        for reason in risk_event.reasons:
-            cv2.putText(frame, f"- {reason}", (10, y_offset), 
-                        self.font, 0.6, color, 1)
-            y_offset += 25
+        # User requested NO text on camera feed for risk.
+        # This is now handled entirely by the Sidebar UI.
+        pass
 
     def render(self, frame_data: FrameData, 
               object_results: List[DetectionResult], 

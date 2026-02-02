@@ -38,6 +38,9 @@ class Camera:
         while self.running:
             ret, frame = self.cap.read()
             if ret:
+                # Flip horizontally for natural mirror view
+                frame = cv2.flip(frame, 1)
+                
                 with self.lock:
                     self.frame_count += 1
                     self.last_frame = FrameData(

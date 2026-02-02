@@ -33,6 +33,7 @@ class MainWindow(QMainWindow):
     @pyqtSlot()
     def start_exam(self):
         """Switch to Proctor Page and Start CV Worker"""
+        self.proctor_page.reset_ui() # Ensure fresh UI
         self.stack.setCurrentWidget(self.proctor_page)
         
         # Initialize Worker
@@ -43,6 +44,8 @@ class MainWindow(QMainWindow):
             self.worker.image_signal.connect(self.proctor_page.update_frame)
             self.worker.status_signal.connect(self.proctor_page.update_status)
             self.worker.stats_signal.connect(self.proctor_page.update_stats)
+            self.worker.risk_signal.connect(self.proctor_page.log_risk_event)
+            self.worker.log_signal.connect(self.proctor_page.log_message)
             
             self.worker.start()
 
@@ -53,6 +56,7 @@ class MainWindow(QMainWindow):
             self.worker.stop()
             self.worker = None
             
+        self.proctor_page.reset_ui()
         self.stack.setCurrentWidget(self.home_page)
 
     @pyqtSlot()

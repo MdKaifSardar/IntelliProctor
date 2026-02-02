@@ -50,6 +50,9 @@ Here we track the technical evolution, challenges, and decisions made during the
   - Essential for detecting notes hidden on keyboards or laps.
 - **Auto-Calibration**:
   - **Problem**: Users have different "neutral" head positions; some sit higher/lower.
+    - **Button Logic**: Added Grace Period (10 frames) to `FaceDetector` to prevent immediate failure on click. Fixed `SystemController` state reset on failure to ensure button returns to "CALIBRATE".
+    - **Logic Fix**: Fixed swapped `cx` and `cy` in FaceDetector. Before, Optical Center was (240, 320) instead of (320, 240), causing asymmetry in Yaw/Pitch sensitivity (Right/Down felt faster).
+    - **UX**: Flipped camera horizontally for natural mirror feel.
   - **Solution**: First 30 frames are averaged to calculate a baseline (zero) pose. All subsequent tracking is relative to this baseline.
 - **System Controller**:
   - Refactored `main.py` into a `SystemController` class.
@@ -81,3 +84,19 @@ Here we track the technical evolution, challenges, and decisions made during the
   - Added **Sidebar Controls** for native "Recalibrate" and "End Exam" actions.
 - **Headless Backend**:
   - Refactored `SystemController` to operate without direct window management, making it suitable for embedding in any GUI framework (or Web API in the future).
+
+#### **Phase 9: UI Polymerization & Logic Hardening**
+
+- **UI Polish**:
+  - Implemented **Risk Log Sidebar**: Rich text logging of all system events (Startup, Calibration Success, Risk Alerts).
+  - **Calibration Progress Bar**: Visual feedback for the 2-second calibration accumulation.
+  - **Clean Video Feed**: Removed text overlays from the video to keep the proctor's view unobstructed.
+- **Deep Reset Logic**:
+  - **Issue**: Restarting an exam inherited "ghost" data (risk history, warnings) from the previous session.
+  - **Fix**: Implemented `reset()` methods across `BehaviorAnalyzer`, `RiskEngine`, and `FaceDetector`. Connected `SystemController.stop()` to trigger a full system wipe.
+- **Frontend Reset**:
+  - **Issue**: UI elements (logs) persisted even after backend reset.
+  - **Fix**: Added `ProctorPage.reset_ui()` to explicitly clear logs and labels on exam start/stop.
+- **Bug Fix**:
+  - Restored accidental deletion of `FaceDetector._calculate_head_pose` which caused a regression crash.
+  - Fixed `SystemController.step` not returning `RiskEvent` objects, preventing logs from reaching the UI.

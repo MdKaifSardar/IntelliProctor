@@ -1,6 +1,7 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QProgressBar, QTextEdit
+from PyQt6.QtCore import Qt, pyqtSignal, QDateTime
 from PyQt6.QtGui import QImage, QPixmap, QFont
+from app.core.schemas import RiskEvent
 
 class ProctorPage(QWidget):
     # Signals for Main Window to handle logic
@@ -35,7 +36,7 @@ class ProctorPage(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sidebar_layout.addWidget(title)
         
-        sidebar_layout.addSpacing(20)
+        sidebar_layout.addSpacing(10)
         
         # Status Indicator
         self.status_label = QLabel("STATUS: IDLE")
@@ -44,7 +45,28 @@ class ProctorPage(QWidget):
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sidebar_layout.addWidget(self.status_label)
         
-        sidebar_layout.addSpacing(20)
+        sidebar_layout.addSpacing(10)
+
+        # Calibration Progress
+        self.calib_progress = QProgressBar()
+        self.calib_progress.setRange(0, 100)
+        self.calib_progress.setValue(0)
+        self.calib_progress.setTextVisible(True)
+        self.calib_progress.setStyleSheet("""
+            QProgressBar {
+                border: 2px solid grey;
+                border-radius: 5px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #3498db;
+                width: 20px;
+            }
+        """)
+        self.calib_progress.hide() # Hidden by default
+        sidebar_layout.addWidget(self.calib_progress)
+        
+        sidebar_layout.addSpacing(10)
         
         # --- Telemetry Section ---
         telemetry_box = QFrame()
@@ -70,8 +92,18 @@ class ProctorPage(QWidget):
         t_layout.addWidget(self.warning_label)
         
         sidebar_layout.addWidget(telemetry_box)
-        
-        sidebar_layout.addStretch()
+
+        sidebar_layout.addSpacing(10)
+
+        # --- Risk Log ---
+        log_label = QLabel("Event Log")
+        log_label.setFont(QFont("Arial", 10, QFont.Weight.Bold))
+        sidebar_layout.addWidget(log_label)
+
+        self.risk_log = QTextEdit()
+        self.risk_log.setReadOnly(True)
+        self.risk_log.setStyleSheet("background-color: #34495e; color: #ecf0f1; border: none; font-size: 11px;")
+        sidebar_layout.addWidget(self.risk_log)
         
         # Recalibrate Button
         self.btn_calib = QPushButton("CALIBRATE")
@@ -109,6 +141,26 @@ class ProctorPage(QWidget):
         
         layout.addWidget(sidebar)
 
+    def reset_ui(self):
+        """Resets all UI elements to default state"""
+        self.risk_log.clear()
+        self.calib_progress.setValue(0)
+        self.calib_progress.hide()
+        self.status_label.setText("STATUS: IDLE")
+        self.status_label.setStyleSheet("color: #ecf0f1; border: 2px solid #bdc3c7; padding: 10px; border-radius: 5px;")
+        self.pose_label.setText("Pose: -")
+        self.audio_label.setText("Audio: -")
+        self.warning_label.setText("")
+        self.video_label.setText("Waiting for Camera...")
+        
+        # Reset Button to Start State
+        self.btn_calib.setText("CALIBRATE")
+        self.btn_calib.setEnabled(True)
+        self.btn_calib.setStyleSheet("""
+            QPushButton { background-color: #e67e22; color: white; border-radius: 5px; }
+            QPushButton:hover { background-color: #d35400; }
+        """)
+
     def update_frame(self, qt_image: QImage):
         """Slot to receive new frame from worker"""
         # Scale to fit label while keeping aspect ratio
@@ -118,6 +170,21 @@ class ProctorPage(QWidget):
             Qt.TransformationMode.SmoothTransformation
         )
         self.video_label.setPixmap(scaled_pixmap)
+
+    def log_message(self, message: str, color: str = "white"):
+        """Log a generic message to the sidebar"""
+        timestamp = QDateTime.currentDateTime().toString("HH:mm:ss")
+        html = f"<span style='color: grey'>[{timestamp}]</span> <span style='color: {color}'>{message}</span>"
+        self.risk_log.append(html)
+
+    def log_risk_event(self, event: RiskEvent):
+        """Log a rich risk event to the sidebar"""
+        color = "white"
+        if event.risk_level.value == "HIGH": color = "#ff5555"
+        elif event.risk_level.value == "MEDIUM": color = "#f1c40f"
+        
+        reasons_str = ", ".join(event.reasons)
+        self.log_message(f"<b style='color: {color}'>{event.risk_level.value}</b>: {reasons_str}", "white")
 
     def update_status(self, text: str, color: str):
         """Update the sidebar status text"""
@@ -136,6 +203,13 @@ class ProctorPage(QWidget):
             self.warning_label.setText(f"⚠ {stats['warning']}")
         else:
             self.warning_label.setText("")
+        
+        # Update Progress Bar
+        if "calibration_progress" in stats:
+            self.calib_progress.show()
+            self.calib_progress.setValue(stats["calibration_progress"])
+        else:
+            self.calib_progress.hide()
             
         # Dynamic Button Logic
         # If we have pose data, we are likely monitoring or just finished calibration

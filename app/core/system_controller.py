@@ -64,11 +64,22 @@ class SystemController:
             self.detectors["audio"].start()
             
     def stop(self):
+        # Reset all detectors to ensure fresh start next run
+        if "face" in self.detectors:
+             self.detectors["face"].reset()
+             
         if "audio" in self.detectors:
             self.detectors["audio"].stop()
             
         if self.camera:
             self.camera.stop()
+            
+        # Reset Logic Engines
+        if self.behavior:
+            self.behavior.reset()
+            
+        if self.risk_engine:
+            self.risk_engine.reset()
 
     def step(self) -> Optional[Any]:
         """
@@ -101,7 +112,7 @@ class SystemController:
             # or just do nothing. Visualizer might be confused by None results.
             # Let's use visualizer to strictly render safety message.
             vis_frame = self.visualizer.render(frame_data, [], [], None, None)
-            return vis_frame, {}
+            return vis_frame, {}, None
 
         # --- STATE 2: CALIBRATING ---
         if self.calibration_in_progress:
@@ -130,7 +141,7 @@ class SystemController:
             vis_frame = self.visualizer.render(frame_data, [], face_results, None, None)
             
             # Pass results so UI can see "is_calibrating" flag
-            return vis_frame, {"face": face_results}
+            return vis_frame, {"face": face_results}, None
 
         # --- STATE 3: MONITORING (Calibrated) ---
         if self.is_monitoring:
@@ -172,10 +183,10 @@ class SystemController:
                 audio_result
             )
 
-            return vis_frame, results_map
+            return vis_frame, results_map, risk_event
             
 
-        return None, {}
+        return None, {}, None
 
     def start_calibration(self):
         """
@@ -203,8 +214,6 @@ class SystemController:
         
         # Reset Face Detector State
         if "face" in self.detectors:
-            self.detectors["face"].state = "IDLE"
-            self.detectors["face"].is_calibrating = False
-            self.detectors["face"].calibration_warning = None
+            self.detectors["face"].reset()
 
 

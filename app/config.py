@@ -2,6 +2,11 @@ import os
 from pydantic import BaseModel, Field
 from typing import List, Set
 
+class CalibrationConfig(BaseModel):
+    MAX_CALIBRATION_OFFSET: float = 20.0
+    calibration_target_frames: int = 60 # ~2 seconds at 30fps
+    grace_period_frames: int = 10       # ~0.3 seconds
+
 class CameraConfig(BaseModel):
     id: int = Field(0, description="Camera Device ID")
     width: int = Field(1280, description="Capture Width")
@@ -15,8 +20,19 @@ class FaceDetectorConfig(BaseModel):
     
     # Sensitivity (Normalized -1.0 to 1.0)
     yaw_threshold: float = 0.20   # Left/Right
-    pitch_threshold: float = 0.20 # Up/Down
+    pitch_threshold: float = 0.15 # Up/Down
     visualize_landmarks: bool = True # Show face mesh
+    
+    # Generic 3D Face Model (X, Y, Z) - For PnP Solver
+    # Left Eye, Right Eye, Nose, Left Mouth, Right Mouth, Chin
+    generic_3d_face_model: List[List[float]] = [
+            [-225.0, -170.0,  135.0], # 33: Left Eye
+            [ 225.0, -170.0,  135.0], # 263: Right Eye
+            [   0.0,    0.0,    0.0], # 1: Nose
+            [-150.0,  150.0,  125.0], # 61: Left Mouth
+            [ 150.0,  150.0,  125.0], # 291: Right Mouth
+            [   0.0,  330.0,   65.0]  # 199: Chin
+    ]
 
 class ObjectDetectorConfig(BaseModel):
     model_path: str = "yolov8n.pt"
@@ -61,6 +77,7 @@ class AppConfig(BaseModel):
     objects: ObjectDetectorConfig = Field(default_factory=ObjectDetectorConfig)
     audio: AudioConfig = Field(default_factory=AudioConfig)
     risk: RiskConfig = Field(default_factory=RiskConfig)
+    calibration: CalibrationConfig = Field(default_factory=CalibrationConfig)
     
     log_level: str = "INFO"
     

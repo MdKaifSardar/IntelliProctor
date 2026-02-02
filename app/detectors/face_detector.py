@@ -15,7 +15,7 @@ class FaceDetector(IFaceDetector):
         # Calibration State
         self.state = "IDLE" # IDLE, CALIBRATING, CALIBRATED
         self.calibration_frames = 0
-        self.calibration_target = 60 # ~2 seconds
+        self.calibration_target = settings.calibration.calibration_target_frames 
         self.baseline_yaw = 0.0
         self.baseline_pitch = 0.0
         self.baseline_roll = 0.0
@@ -23,7 +23,7 @@ class FaceDetector(IFaceDetector):
         self.calibration_warning = None
         
         # Safety Limits (Max deviation from Absolute Zero in degrees)
-        self.MAX_CALIBRATION_OFFSET = 20.0 
+        self.MAX_CALIBRATION_OFFSET = settings.calibration.MAX_CALIBRATION_OFFSET
         
         # Create FaceLandmarker options
         base_options = python.BaseOptions(model_asset_path='app/models/face_landmarker.task')
@@ -57,7 +57,19 @@ class FaceDetector(IFaceDetector):
         
         self.calibration_warning = None
         self.is_calibrating = True
-        
+        self.calibration_warning = None
+        self.is_calibrating = True
+
+    def reset(self):
+        """Resets state to IDLE and clears all calibration data"""
+        self.state = "IDLE"
+        self.calibration_frames = 0
+        self.baseline_yaw = 0.0
+        self.baseline_pitch = 0.0
+        self.baseline_roll = 0.0
+        self.is_calibrating = False
+        self.calibration_warning = None
+
     def _calculate_head_pose(self, landmarks, image_shape) -> Tuple[float, float]:
         """
         Estimate head pose (yaw, pitch) from landmarks.
@@ -82,14 +94,7 @@ class FaceDetector(IFaceDetector):
         # Coordinates in arbitrary units, centered at Nose tip (0,0,0)
         # Y-axis points DOWN (matching image coords)
         # Z-axis points INTO screen (Standard OpenCV): Nose=0, Eyes=Positive (Further)
-        face_3d = np.array([
-            [-225.0, -170.0,  135.0], # 33: Left Eye
-            [ 225.0, -170.0,  135.0], # 263: Right Eye
-            [   0.0,    0.0,    0.0], # 1: Nose
-            [-150.0,  150.0,  125.0], # 61: Left Mouth
-            [ 150.0,  150.0,  125.0], # 291: Right Mouth
-            [   0.0,  330.0,   65.0]  # 199: Chin
-        ], dtype=np.float64)
+        face_3d = np.array(settings.face.generic_3d_face_model, dtype=np.float64)
 
         for idx in landmark_indices:
             lm = landmarks[idx]
@@ -102,8 +107,8 @@ class FaceDetector(IFaceDetector):
         # Camera matrix
         focal_length = 1 * img_w
         cam_matrix = np.array([
-            [focal_length, 0, img_h / 2],
-            [0, focal_length, img_w / 2],
+            [focal_length, 0, img_w / 2],
+            [0, focal_length, img_h / 2],
             [0, 0, 1]
         ])
         dist_matrix = np.zeros((4, 1), dtype=np.float64)
@@ -158,9 +163,10 @@ class FaceDetector(IFaceDetector):
                 
                 is_out_of_bounds = deg_yaw > self.MAX_CALIBRATION_OFFSET or deg_pitch > self.MAX_CALIBRATION_OFFSET
                 
-                # GRACE PERIOD: First 10 frames (approx 0.5s), we allow out-of-bounds.
+                # GRACE PERIOD: from config
+                grace_limit = settings.calibration.grace_period_frames
                 if is_out_of_bounds:
-                    if self.calibration_frames < 10:
+                    if self.calibration_frames < grace_limit:
                          self.calibration_warning = "Aligning..."
                          pass
                     else:
@@ -190,6 +196,11 @@ class FaceDetector(IFaceDetector):
             pitch = raw_pitch - self.baseline_pitch
             roll = 0.0 # Unused
             
+            # Calculate Progress (0.0 to 1.0)
+            cal_progress = 0.0
+            if self.state == "CALIBRATING" and self.calibration_target > 0:
+                cal_progress = min(1.0, self.calibration_frames / self.calibration_target)
+            
             face_results.append(FaceResult(
                 face_present=True,
                 yaw=yaw,
@@ -197,7 +208,8 @@ class FaceDetector(IFaceDetector):
                 roll=roll,
                 landmarks=face_landmarks,
                 is_calibrating=self.is_calibrating,
-                calibration_warning=self.calibration_warning
+                calibration_warning=self.calibration_warning,
+                calibration_progress=cal_progress
             ))
             
         return face_results

@@ -11,17 +11,22 @@ class ProctorWorker(QThread):
     status_signal = pyqtSignal(str, str) # (Status Text, Color Code)
     risk_signal = pyqtSignal(object) # RiskEvent object
     stats_signal = pyqtSignal(dict) # new generic stats channel
+    log_signal = pyqtSignal(str, str) # (Message, Color) - New Log Channel
     
     def __init__(self):
         super().__init__()
         self.running = True
         self.controller = SystemController()
+        # Track previous state to log transitions
+        self.prev_face_state = "IDLE" 
         
     def run(self):
         """Main CV Loop"""
         # Initialize Headless (no window creation here)
+        self.log_signal.emit("Initializing System...", "#3498db")
         self.controller.initialize()
         self.controller.start()
+        self.log_signal.emit("System Ready. Waiting for Calibration.", "#00FF00")
         
         while self.running:
             # 1. Logic Step
@@ -31,7 +36,7 @@ class ProctorWorker(QThread):
                 self.msleep(10)
                 continue
                 
-            frame, results = step_result
+            frame, results, risk_event = step_result
             
             if frame is not None:
                 # 2. Convert to Qt Image
@@ -54,6 +59,10 @@ class ProctorWorker(QThread):
                     elif level == RiskLevel.MEDIUM: color = "#FFFF00"
                     
                     self.status_signal.emit(f"RISK: {level.value}", color)
+                    
+                # 3b. Emit Risk Event (Log)
+                if risk_event:
+                    self.risk_signal.emit(risk_event)
 
                 # 4. Emit Rich Telemetry
                 stats = {}
@@ -68,8 +77,30 @@ class ProctorWorker(QThread):
                             stats["pitch"] = f"{face.pitch:.2f}"
                             stats["roll"] = f"{face.roll:.2f}"
                         
-                        # Pass calibration state to UI?
+                        # LOG STATE TRANSITIONS
+                        # We don't have direct access to 'state' string in result, but we can infer
+                        # Actually we can't easily infer "CALIBRATED" transition from just boolean is_calibrating
+                        # We need the FaceDetector state.
+                        # BUT, we can detect end of calibration:
+                        if self.prev_face_state == "CALIBRATING" and not face.is_calibrating:
+                             # Either Success or Failure?
+                             # If we have yaw/pitch, it's likely success monitoring.
+                             self.log_signal.emit("Calibration Successful!", "#00FF00")
+                             self.prev_face_state = "MONITORING"
+                        
+                        elif not face.is_calibrating and self.prev_face_state == "IDLE":
+                            # Maybe monitoring?
+                            pass
+                            
+                        # Update tracker
+                        if face.is_calibrating: 
+                            self.prev_face_state = "CALIBRATING"
+                        
+                        # Pass calibration state to UI
                         stats["is_calibrating"] = face.is_calibrating
+                        if face.is_calibrating:
+                             stats["calibration_progress"] = int(face.calibration_progress * 100)
+                        
                         if face.calibration_warning:
                             stats["warning"] = face.calibration_warning
 
@@ -87,6 +118,7 @@ class ProctorWorker(QThread):
                 
         # Cleanup
         self.controller.stop()
+        self.log_signal.emit("System Stopped.", "orange")
 
     def stop(self):
         self.running = False
@@ -95,8 +127,12 @@ class ProctorWorker(QThread):
     def recalibrate(self):
         """Trigger calibration on the controller"""
         # This now triggers the STRICT DETACHMENT logic in controller
+        self.log_signal.emit("Starting Calibration...", "#f39c12")
         self.controller.start_calibration()
+        self.prev_face_state = "CALIBRATING"
 
     def stop_calibration(self):
         """Trigger stop calibration on controller"""
+        self.log_signal.emit("Calibration Manual Stop.", "red")
         self.controller.stop_calibration()
+        self.prev_face_state = "IDLE"

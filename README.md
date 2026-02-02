@@ -1,117 +1,96 @@
-# Intelligent Exam Proctoring System
+<div align="center">
 
-A modular, computer-vision-based **decision support system** designed to assist proctors by detecting potential risk indicators in real-time. This system analyzes webcam feeds to flag suspicious behaviors such as device usage, multiple people, and extensive gaze aversion.
+# 🧠 Intelligent Exam Proctoring System
 
-> **⚠️ Disclaimer**: This system is designed to **assist** human proctors, not replace them. It flags potential risks for review. It does not make definitive judgments on cheating.
+### AI-Powered Real-Time Behavioral Analysis for Exam Security
+
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![PyQt6](https://img.shields.io/badge/PyQt6-Desktop_App-green?style=for-the-badge&logo=qt&logoColor=white)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-Computer_Vision-blue?style=for-the-badge&logo=google&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)
+
+<br>
+
+![Project Thumbnail](assets/thumbnail.PNG)
+
+<br>
+
+**A decentralized, privacy-first computer vision assistant that helps proctors identify high-risk behaviors in real-time.**
+<br>
+_Detects Phones, Multiple People, Audio Violations, and Gaze Aversion without recording video._
+
+</div>
+
+---
 
 ## 🚀 Features
 
-- **Real-time Analysis**: Processes webcam feed at ~30 FPS.
-- **Face & Gaze Tracking**: Detects facial presence and head pose (yaw/pitch) to identify looking-away behaviors.
-  - **Auto-Calibration**: Zeroes out head pose on startup for accurate relative tracking.
-- **Audio Detection**: Monitors microphone for high volume or speech patterns.
-- **Object Detection**: Identifies potential malpractice objects:
-  - 📱 Mobile Phones
-  - 👥 Multiple People
-  - 🎧 Headphones (Experimental)
-- **Risk Engine**:
-  - Aggregates temporal signals (ignores momentary glitches).
-  - Flags `PITCH` (Looking Up/Down) and `AUDIO` violations.
-  - Calculates a generic Risk Score.
-  - Triggers `LOW`, `MEDIUM`, or `HIGH` risk events with explainable reasons.
-- **Visual Overlay**: Provides immediate visual feedback (bounding boxes, status text) and risk alerts.
-- **Proctor Sidebar**:
-  - **Event Log**: A scrollable history of all risk events and system statuses.
-  - **Calibration Progress**: Visual bar showing synchronization status.
-  - **Real-time Telemetry**: Live view of Head Pose (Yaw/Pitch) and Audio Levels.
-- **Privacy-First**: Does not store video feeds or identify individuals (no facial recognition, only detection).
+| Feature                          | Description                                                                                               |
+| :------------------------------- | :-------------------------------------------------------------------------------------------------------- |
+| **👀 Head Pose & Gaze Tracking** | Uses 3D face landmarks to detect looking away (Yaw/Pitch) with auto-calibration logic.                    |
+| **📱 Object Detection**          | Identifies **Mobile Phones**, **Multiple People**, and **Headphones** using high-speed YOLOv8.            |
+| **🎙️ Audio Analysis**            | Monitors microphone for speech patterns and high-decibel anomalies.                                       |
+| **🧠 Behavior Risk Engine**      | Aggregates temporal data to flag **Gaze**, **Pitch**, and **Voice** violations with a rolling risk score. |
+| **📊 Proctor Dashboard**         | **Real-Time Sidebar** with an Event Log, Calibration Progress Bar, and Live Telemetry (0.1s latency).     |
+| **🔒 Privacy First**             | **No Video Storage.** All analysis happens locally in memory. Only metadata (logs) is retained.           |
 
 ## 🛠️ Tech Stack
 
-- **Language**: Python 3.10+
-- **GUI Framework**: PyQt6 (Desktop Application)
-- **Computer Vision**:
-  - **MediaPipe Tasks**: Robust Face Landmark detection.
-  - **OpenCV**: Image processing and visualization.
-  - **YOLOv8** (Ultralytics): Fast and accurate object detection.
-- **Architecture**: Modular "Pipe & Filter" design (Camera -> Detectors -> Analysis -> Risk -> UI).
-- **Configuration**: Pydantic-based settings management.
+- **Core**: Python 3.10+
+- **GUI Engine**: **PyQt6** (Threaded Worker Pattern)
+- **Vision Models**:
+  - **MediaPipe Tasks** (Face Mesh)
+  - **YOLOv8 Nano** (Object Detection)
+  - **OpenCV** (Image Processing)
+- **Logic**: Custom "Pipe & Filter" Architecture with Pydantic Schemas.
 
 ## 📦 Installation
 
-1.  **Clone the repository**:
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd cheat-detection
 
-    ```bash
-    git clone <repository-url>
-    cd cheat-detection
-    ```
-
-2.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    _Note: This will automatically handle the specific `protobuf` and `mediapipe` version requirements._
+# 2. Install Dependencies
+pip install -r requirements.txt
+```
 
 ## ▶️ Usage
 
-1.  **Run the Application**:
+1.  **Run the App**:
 
     ```bash
     python run.py
     ```
 
-    _First run will download necessary models (`yolov8n.pt`, `face_landmarker.task`)._
+    _(First run will download AI models automatically)_
 
-2.  **Controls**:
-    - Press **`q`** to exit the application.
+2.  **Calibrate**:
+    - Click **"CALIBRATE"** in the sidebar.
+    - Look straight at the camera for 2 seconds.
+    - Wait for the blue progress bar to fill.
 
-3.  **Understanding the UI**:
-    - **Green/Blue Boxes**: Detected objects (Person, Phone).
-    - **Yellow Text**: Real-time status (e.g., `Head: Side Looking`).
-    - **Top Header**: Current Risk Level.
-      - **Red**: High Risk (e.g., Phone detected).
-      - **Yellow**: Medium Risk (e.g., Extensive looking away).
-
-## 📂 Project Structure
-
-```
-app/
-├── analysis/           # Logic & State
-│   ├── behavior.py     # Temporal aggregation (rolling windows)
-│   └── risk_engine.py  # Scoring logic
-├── core/               # Shared logic
-│   ├── interfaces.py   # Abstract base classes
-│   └── schemas.py      # Data structures (Pydantic)
-├── detectors/          # CV Models
-│   ├── face_detector.py   # MediaPipe implementation
-│   └── object_detector.py # YOLO implementation
-├── infrastructure/     # I/O
-│   ├── camera.py       # Threaded capture
-│   └── visualizer.py   # Drawing utils
-├── models/             # Model weights storage
-├── config.py           # Configuration settings
-└── main.py             # Application orchestrator
-run.py                  # Entry point
-requirements.txt        # Dependencies
-DEVLOG.md               # Development history & notes
-```
+3.  **Monitor**:
+    - Watch the **Event Log** for "High Risk" alerts.
+    - The video feed will highlight detected objects in Red/Green.
 
 ## ⚙️ Configuration
 
-You can tune sensitivity in `app/config.py`:
+Tune the system in `app/config.py`:
 
-- **Active Modules**: Enable/disable `face`, `audio`, `object` modules dynamically.
-- **Risk Thresholds**: Adjust `weight_phone`, `weight_gaze`, `audio.threshold_rms`, etc.
-- **Timing**: Adjust `max_frames_looking_away` (lower = faster detection).
-- **Visualization**: Toggle `visualize_landmarks` for debug dots.
+| Parameter                 | Default                       | Description                             |
+| :------------------------ | :---------------------------- | :-------------------------------------- |
+| `active_modules`          | `['face', 'object', 'audio']` | Toggle specific detectors on/off        |
+| `weight_gaze`             | `0.5`                         | Sensitivity to looking away (0.0 - 1.0) |
+| `weight_phone`            | `1.5`                         | Risk score penalty for phone detection  |
+| `max_frames_looking_away` | `3`                           | Frames before triggering "Looking Away" |
 
-## 🤝 Contributing
+---
 
-1.  Fork the repository.
-2.  Create a feature branch.
-3.  Commit your changes.
-4.  Open a Pull Request.
+<div align="center">
 
-## 📄 License
+**[Contributing](CONTRIBUTING.md) • [License](LICENSE) • [Devlog](DEVLOG.md)**
 
-[MIT License](LICENSE)
+_Disclaimer: This tool provides decision support and does not replace human judgment._
+
+</div>

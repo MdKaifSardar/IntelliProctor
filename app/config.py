@@ -20,7 +20,8 @@ class FaceDetectorConfig(BaseModel):
     
     # Sensitivity (Normalized -1.0 to 1.0)
     yaw_threshold: float = 0.20   # Left/Right
-    pitch_threshold: float = 0.15 # Up/Down
+    pitch_threshold_up: float = 0.20  # Looking Up (Less sensitive)
+    pitch_threshold_down: float = 0.15 # Looking Down (More sensitive)
     visualize_landmarks: bool = True # Show face mesh
     
     # Generic 3D Face Model (X, Y, Z) - For PnP Solver

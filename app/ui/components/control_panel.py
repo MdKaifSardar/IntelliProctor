@@ -66,6 +66,8 @@ class ControlPanel(QWidget):
         if text == "STOP":
             self.stop_calibration_request.emit()
         else:
+            # Force UI Reset immediately for feedback
+            self.calib_progress.setValue(0)
             self.recalibrate_request.emit()
 
     def update_state(self, is_calibrating: bool, is_calibrated: bool):

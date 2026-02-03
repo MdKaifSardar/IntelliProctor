@@ -28,7 +28,8 @@ class MainWindow(QMainWindow):
         # Signals
         self.home_page.start_exam_signal.connect(self.start_exam)
         self.proctor_page.stop_request.connect(self.stop_exam)
-        self.proctor_page.recalibrate_request.connect(self.handle_recalibrate)
+        self.proctor_page.recalibrate_request.connect(self.start_calibration)
+        self.proctor_page.stop_calibration_request.connect(self.stop_calibration)
 
     @pyqtSlot()
     def start_exam(self):
@@ -60,29 +61,15 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentWidget(self.home_page)
 
     @pyqtSlot()
-    def handle_recalibrate(self):
-        """
-        Handle the single button click.
-        Context-aware:
-        - If button says "STOP", call stop_calibration.
-        - Else, call recalibrate (Start).
-        """
-        # We need to know the current state.
-        # We can check the button text directly from the page if we want,
-        # or rely on a flag. Checking text is simple/robust for this UI-driven logic.
-        # Note: We need to access the pages correctly.
-        # The proctor_page is at index 1 (stacked widget).
-        
-        # proctor_page = self.pages.widget(1) # Assuming ProctorPage is index 1
-        # Better: self.proctor_page if we stored it as attribute (we did in init_ui)
-        
-        btn_text = self.proctor_page.btn_calib.text()
-        
-        if btn_text == "STOP":
-            logger.info("User requested to STOP calibration.")
-            if self.worker:
-                self.worker.stop_calibration()
-        else:
-            logger.info("User requested to START/RE-CALIBRATE.")
-            if self.worker:
-                self.worker.recalibrate()
+    def start_calibration(self):
+        """User requested to START or REDO calibration"""
+        logger.info("User requested to START/RE-CALIBRATE.")
+        if self.worker:
+            self.worker.recalibrate()
+
+    @pyqtSlot()
+    def stop_calibration(self):
+        """User requested to STOP calibration"""
+        logger.info("User requested to STOP calibration.")
+        if self.worker:
+            self.worker.stop_calibration()

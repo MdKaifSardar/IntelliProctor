@@ -63,8 +63,15 @@ class BehaviorAnalyzer:
                 self.frames_looking_away = 0
                 
             # Check Pitch (Up/Down)
-            PITCH_THRESHOLD = settings.face.pitch_threshold
-            if abs(face.pitch) > PITCH_THRESHOLD:
+            # Note: In our coordinate system, UP is usually Negative, DOWN is Positive
+            is_pitch_violation = False
+            
+            if face.pitch < -settings.face.pitch_threshold_up: # Looking UP violates UP threshold
+                 is_pitch_violation = True
+            elif face.pitch > settings.face.pitch_threshold_down: # Looking DOWN violates DOWN threshold
+                 is_pitch_violation = True
+                 
+            if is_pitch_violation:
                 self.frames_pitch_violation += 1
                 if self.frames_pitch_violation > settings.risk.max_frames_pitch_violation:
                      signals.append(AnalysisSignal(

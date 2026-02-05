@@ -12,19 +12,6 @@ from mediapipe.tasks.python import vision
 
 class FaceDetector(IFaceDetector):
     def __init__(self):
-        # Calibration State
-        self.state = "IDLE" # IDLE, CALIBRATING, CALIBRATED
-        self.calibration_frames = 0
-        self.calibration_target = settings.calibration.calibration_target_frames 
-        self.baseline_yaw = 0.0
-        self.baseline_pitch = 0.0
-        self.baseline_roll = 0.0
-        self.is_calibrating = False 
-        self.calibration_warning = None
-        
-        # Safety Limits (Max deviation from Absolute Zero in degrees)
-        self.MAX_CALIBRATION_OFFSET = settings.calibration.MAX_CALIBRATION_OFFSET
-        
         # Create FaceLandmarker options
         base_options = python.BaseOptions(model_asset_path='app/models/face_landmarker.task')
         options = vision.FaceLandmarkerOptions(
@@ -43,32 +30,9 @@ class FaceDetector(IFaceDetector):
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=dummy_frame)
         self.detector.detect(mp_image)
 
-    def start_calibration(self):
-        """Triggers manual calibration sequence"""
-        self.state = "CALIBRATING"
-        self.calibration_frames = 0
-        self.baseline_yaw = 0.0
-        self.baseline_pitch = 0.0
-        self.baseline_roll = 0.0
-        
-        # Accumulators (Separate from baseline to avoid visual drift during cal)
-        self._accum_yaw = 0.0
-        self._accum_pitch = 0.0
-        
-        self.calibration_warning = None
-        self.is_calibrating = True
-        self.calibration_warning = None
-        self.is_calibrating = True
-
     def reset(self):
-        """Resets state to IDLE and clears all calibration data"""
-        self.state = "IDLE"
-        self.calibration_frames = 0
-        self.baseline_yaw = 0.0
-        self.baseline_pitch = 0.0
-        self.baseline_roll = 0.0
-        self.is_calibrating = False
-        self.calibration_warning = None
+        """No-op for stateless detector"""
+        pass
 
     def _calculate_head_pose(self, landmarks, image_shape) -> Tuple[float, float]:
         """
@@ -145,71 +109,26 @@ class FaceDetector(IFaceDetector):
         detection_result = self.detector.detect(mp_image)
         
         if not detection_result.face_landmarks:
-            # If we lose face during calibration, abort? 
-            # For now just return empty, calibration will effectively pause or continue next frame
-            return [FaceResult(face_present=False, is_calibrating=self.is_calibrating)]
+            return [FaceResult(face_present=False)]
         
         face_results = []
         for face_landmarks in detection_result.face_landmarks:
             # Raw values (Normalized -1.0 to 1.0)
             raw_yaw, raw_pitch = self._calculate_head_pose(face_landmarks, image.shape)
             
-            # State Machine
-            if self.state == "CALIBRATING":
-                # 1. Safety Check (Anti-Cheat)
-                # Convert normalized angles back to degrees approx (x90) for intuitive check
-                deg_yaw = abs(raw_yaw * 90)
-                deg_pitch = abs(raw_pitch * 90)
-                
-                is_out_of_bounds = deg_yaw > self.MAX_CALIBRATION_OFFSET or deg_pitch > self.MAX_CALIBRATION_OFFSET
-                
-                # GRACE PERIOD: from config
-                grace_limit = settings.calibration.grace_period_frames
-                if is_out_of_bounds:
-                    if self.calibration_frames < grace_limit:
-                         self.calibration_warning = "Aligning..."
-                         pass
-                    else:
-                        # NEW LOGIC: PAUSE, DON'T ABORT
-                        self.calibration_warning = "Look Straight to Continue!"
-                        # Do NOT increment self.calibration_frames
-                        # Do NOT update self.state
-                else:
-                    # 2. Accumulate
-                    self._accum_yaw += raw_yaw
-                    self._accum_pitch += raw_pitch
-                    # self._accum_roll += raw_roll # Unused
-                    self.calibration_frames += 1
-                    self.calibration_warning = f"Calibrating... {int((self.calibration_frames/self.calibration_target)*100)}%"
-                    
-                    # 3. Finalize
-                    if self.calibration_frames >= self.calibration_target:
-                        self.baseline_yaw = self._accum_yaw / self.calibration_target
-                        self.baseline_pitch = self._accum_pitch / self.calibration_target
-                        self.baseline_roll = 0.0 # Unused
-                        self.state = "CALIBRATED"
-                        self.is_calibrating = False
-                        self.calibration_warning = None # Success
-            
-            # Apply Calibration (if any baseline exists)
-            yaw = raw_yaw - self.baseline_yaw
-            pitch = raw_pitch - self.baseline_pitch
-            roll = 0.0 # Unused
-            
-            # Calculate Progress (0.0 to 1.0)
-            cal_progress = 0.0
-            if self.state == "CALIBRATING" and self.calibration_target > 0:
-                cal_progress = min(1.0, self.calibration_frames / self.calibration_target)
+            # NOTE: Calibration logic has been moved to GazeCalibrator (SystemController)
+            # FaceResult now returns RAW values. Controller will overwrite with calibrated ones.
             
             face_results.append(FaceResult(
                 face_present=True,
-                yaw=yaw,
-                pitch=pitch,
-                roll=roll,
+                yaw=raw_yaw,
+                pitch=raw_pitch,
+                roll=0.0, # Unused
                 landmarks=face_landmarks,
-                is_calibrating=self.is_calibrating,
-                calibration_warning=self.calibration_warning,
-                calibration_progress=cal_progress
+                # These default to False/None, will be filled by Controller/GazeCalibrator
+                is_calibrating=False,
+                calibration_warning=None,
+                calibration_progress=0.0
             ))
             
         return face_results

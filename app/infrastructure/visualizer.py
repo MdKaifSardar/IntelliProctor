@@ -84,16 +84,6 @@ class Visualizer:
 
     def _draw_calibration_status(self, frame, face_res):
         """Draws feedback during calibration"""
-        h, w = frame.shape[:2]
-        
-        if face_res.calibration_warning:
-            # Big Red Warning
-            cv2.putText(frame, face_res.calibration_warning, (w//2 - 250, h//2),
-                       cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
-                       
-        if face_res.is_calibrating:
-            # Blue Progress Bar / Status
-            cv2.putText(frame, "CALIBRATING... LOOK STRAIGHT", (w//2 - 200, h//2 - 50),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 200, 0), 2)
-            # Indeterminate bar
-            cv2.rectangle(frame, (w//2 - 100, h//2 + 20), (w//2 + 100, h//2 + 40), (255, 0, 0), -1)
+        # User requested NO text on camera feed.
+        # Messages are handled by the Sidebar StatusIndicator.
+        pass

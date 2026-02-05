@@ -11,14 +11,14 @@ from .control_panel import ControlPanel
 class Sidebar(QFrame):
     def __init__(self):
         super().__init__()
-        self.setStyleSheet("background-color: #2c3e50; color: white;")
+        self.setObjectName("Sidebar")
         self.setFixedWidth(250)
         
         self.layout = QVBoxLayout(self)
         
         # Title
         title = QLabel("Proctor Controls")
-        title.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+        title.setObjectName("SidebarTitle")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout.addWidget(title)
         

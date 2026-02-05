@@ -100,3 +100,38 @@ Here we track the technical evolution, challenges, and decisions made during the
 - **Bug Fix**:
   - Restored accidental deletion of `FaceDetector._calculate_head_pose` which caused a regression crash.
   - Fixed `SystemController.step` not returning `RiskEvent` objects, preventing logs from reaching the UI.
+
+#### **Phase 10: Layout Overhaul & Calibration Logic Separation**
+
+- **UI Modularization (Component Architecture)**:
+  - Refactored the monolithic `ProctorPage` into discrete, reusable components in `app/ui/components/`:
+    - **`Sidebar`**: Dedicated orchestrator for controls and feedback.
+    - **`VideoFeed`**: specialized widget handling aspect-ratio correct rendering.
+    - **`StatusIndicator`**, **`TelemetryPanel`**, **`ControlPanel`**: Isolated logic for specific UI domains.
+  - Adopted a cohesive "Dashboard" layout, moving all controls and text off the video feed for a professional "Monitor-style" aesthetic.
+
+- **Architecture Refactor: Stateless Face Detector**:
+  - **Decoupling**: Extracted the calibration state machine out of `FaceDetector`.
+  - **`GazeCalibrator`**: Created a new dedicated module (`app/analysis/gaze_calibrator.py`) responsible solely for managing calibration baselines, accumulation, and state transitions (`IDLE` -> `CALIBRATING` -> `CALIBRATED`).
+  - **Benefit**: `FaceDetector` is now a pure generic pose estimator, while `SystemController` pipes data through the `GazeCalibrator`. This improves testability and separation of concerns.
+
+- **Logic Tuning: Asymmetric Pitch Sensitivity**:
+  - **Refinement**: Differentiated thresholds for "Looking Up" vs "Looking Down".
+  - **Down (0.15)**: Stricter threshold to detect reading notes/phones.
+  - **Up (0.20)**: Relaxed threshold to accomodate natural thinking gestures.
+
+- **Visualizer Cleanup**:
+  - Removed internal `cv2.putText` calls from the visualizer. All user feedback is now routed through the UI's Status Indicator and Event Log.
+
+#### **Phase 11: UI Modernization (Dark Theme)**
+
+- **Global Visual Overhaul**:
+  - Implemented a **VS Code-inspired Dark Theme** using a global QSS stylesheet (`app/ui/styles.py`).
+  - Standardized fonts to **Segoe UI** for a native Windows 11 feel.
+  - Styled all buttons with flat design, hover effects, and semantic coloring (Blue for Primary, Red for Destructive).
+
+- **Component Styling**:
+  - **Sidebar**: Converted to a "Card" layout with distinct background colors (`#252526`).
+  - **Progress Bar**: Fixed animation glitch by forcing explicit value reset on click. Custom styled with a chunked design.
+
+- **Outcome**: The application now looks like a modern professional desktop tool rather than a prototype.

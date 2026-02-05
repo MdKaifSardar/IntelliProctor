@@ -5,11 +5,14 @@ from app.ui.proctor_page import ProctorPage
 from app.ui.worker import ProctorWorker
 from app.infrastructure.logger import logger
 
+from app.ui.styles import GLOBAL_STYLES
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Intelligent Proctoring System")
         self.resize(1024, 768)
+        self.setStyleSheet(GLOBAL_STYLES)
         
         # Central Stack
         self.stack = QStackedWidget()

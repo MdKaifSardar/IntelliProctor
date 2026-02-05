@@ -10,7 +10,9 @@ def main():
     
     app = QApplication(sys.argv)
     
-    # Optional: Set global styles/theme here
+    # Apply Global Styles (Theme)
+    from app.ui.styles import GLOBAL_STYLES
+    app.setStyleSheet(GLOBAL_STYLES)
     
     window = MainWindow()
     window.show()

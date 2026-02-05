@@ -122,3 +122,16 @@ Here we track the technical evolution, challenges, and decisions made during the
 
 - **Visualizer Cleanup**:
   - Removed internal `cv2.putText` calls from the visualizer. All user feedback is now routed through the UI's Status Indicator and Event Log.
+
+#### **Phase 11: UI Modernization (Dark Theme)**
+
+- **Global Visual Overhaul**:
+  - Implemented a **VS Code-inspired Dark Theme** using a global QSS stylesheet (`app/ui/styles.py`).
+  - Standardized fonts to **Segoe UI** for a native Windows 11 feel.
+  - Styled all buttons with flat design, hover effects, and semantic coloring (Blue for Primary, Red for Destructive).
+
+- **Component Styling**:
+  - **Sidebar**: Converted to a "Card" layout with distinct background colors (`#252526`).
+  - **Progress Bar**: Fixed animation glitch by forcing explicit value reset on click. Custom styled with a chunked design.
+
+- **Outcome**: The application now looks like a modern professional desktop tool rather than a prototype.

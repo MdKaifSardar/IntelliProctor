@@ -150,13 +150,28 @@ class SystemController:
                     # Provide Raw to Calibrator
                     cal_yaw, cal_pitch = self.gaze_calibrator.update(res.yaw, res.pitch)
                     
-                     # Visualizer will show failure message if detector set one
+                    # Update Result with Calibrated Data + Status
+                    res.yaw = cal_yaw
+                    res.pitch = cal_pitch
+                    res.is_calibrating = (self.gaze_calibrator.state == "CALIBRATING")
+                    res.calibration_progress = self.gaze_calibrator.calibration_progress
+                    res.calibration_warning = self.gaze_calibrator.calibration_warning
+                
+            face_results = raw_results
+            results["face"] = face_results
+            
+            # CHECK CALIBRATION COMPLETION
+            if self.calibration_in_progress and self.gaze_calibrator.state == "CALIBRATED":
+                logger.info("Calibration Successful. Starting Monitoring.")
+                self.calibration_in_progress = False
+                self.is_monitoring = True
 
             # Render Logic for Calibration
-            vis_frame = self.visualizer.render(frame_data, [], face_results, None, None)
-            
-            # Pass results so UI can see "is_calibrating" flag
-            return vis_frame, {"face": face_results}, None
+            # If we are strictly calibrating (and not yet switched to monitoring), return early
+            if self.calibration_in_progress:
+                vis_frame = self.visualizer.render(frame_data, [], face_results, None, None)
+                # Pass results so UI can see "is_calibrating" flag
+                return vis_frame, {"face": face_results}, None
 
         # --- STATE 3: MONITORING (Calibrated) ---
         if self.is_monitoring:

@@ -1,10 +1,11 @@
-from PyQt6.QtWidgets import QWidget, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QFrame
 from PyQt6.QtGui import QImage
 from app.core.schemas import RiskEvent
 
 # Import Modular Components
 from app.ui.components.video_feed import VideoFeed
 from app.ui.components.sidebar import Sidebar
+from app.ui.components.top_bar import TopBar
 
 class ProctorPage(QWidget):
     def __init__(self):
@@ -12,17 +13,36 @@ class ProctorPage(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        # Main Layout: Horizontal
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        # 1. Main Vertical Layout (TopBar + Content)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
         
-        # 1. Video Feed (Left) - Takes 75%
-        self.video_feed = VideoFeed()
-        layout.addWidget(self.video_feed, stretch=3)
+        # 2. Top Bar
+        self.top_bar = TopBar()
+        self.main_layout.addWidget(self.top_bar)
         
-        # 2. Sidebar (Right) - Fixed Width
+        # 3. Content Area (Horizontal: Sidebar + Video)
+        # Note: Sidebar on Left or Right? User asked for web app style.
+        # Usually sidebar is Left. Let's put it Left.
+        
+        self.content_area = QWidget()
+        self.content_layout = QHBoxLayout(self.content_area)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setSpacing(0)
+        
+        # Sidebar (Left)
         self.sidebar = Sidebar()
-        layout.addWidget(self.sidebar)
+        self.content_layout.addWidget(self.sidebar)
+        
+        # Video Feed (Right)
+        self.video_feed = VideoFeed()
+        self.content_layout.addWidget(self.video_feed, stretch=1)
+        
+        self.main_layout.addWidget(self.content_area)
+        
+        # Connect TopBar Toggle to Sidebar
+        self.top_bar.toggle_sidebar_signal.connect(self.sidebar.toggle)
         
         # Expose Signals for Controller
         # We proxy the signals from the deep components up to this surface

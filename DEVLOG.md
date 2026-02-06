@@ -135,3 +135,19 @@ Here we track the technical evolution, challenges, and decisions made during the
   - **Progress Bar**: Fixed animation glitch by forcing explicit value reset on click. Custom styled with a chunked design.
 
 - **Outcome**: The application now looks like a modern professional desktop tool rather than a prototype.
+
+#### **Phase 12: Deep UI Overhaul (Web-App Styles)**
+
+- **Layout Modernization**:
+  - Implemented a **Responsive Layout** with a new `TopBar` and Collapsible `Sidebar`.
+  - Added smooth **Width Animations** (QPropertyAnimation) for the sidebar toggle, giving it a native mobile/web app feel.
+  - Added simple SVG icons for navigation (Menu, User Profile).
+
+- **Rich Event Logs**:
+  - Replaced the plain text log with a **Card-Based Feed** (`LogCard`).
+  - Each event now displays as a distinct block with color-coded borders (Red for High Risk, Green for Info), making it easier to scan history.
+
+- **Theme Refinement**:
+  - Deepened the "Dark/Blue" theme.
+  - Ensured transparency on list widgets to blend seamlessly with the background.
+  - Fixed font sizes and padding for a high-DPI friendly look.

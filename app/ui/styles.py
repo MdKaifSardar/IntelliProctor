@@ -15,6 +15,32 @@ QMainWindow {
     font-size: 14px;
 }
 
+/* --- TOP BAR --- */
+QFrame#TopBar {
+    background-color: #252526;
+    border-bottom: 1px solid #333333;
+}
+
+QLabel#HeaderTitle {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+QLabel#HeaderUser {
+    color: #cccccc;
+    font-weight: 500;
+}
+
+QPushButton#MenuButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#MenuButton:hover {
+    background-color: #3e3e42;
+}
+
 QWidget {
     font-family: "Segoe UI", "Roboto", "Arial";
     color: #d4d4d4;
@@ -98,12 +124,15 @@ QLabel#StatusLabel {
 }
 
 /* --- LOG --- */
-QTextEdit#EventLog {
-    background-color: #1e1e1e;
-    border: 1px solid #3e3e42;
+/* --- LOG --- */
+QListWidget#EventLogList {
+    background-color: transparent;
+    border: none;
+    outline: none;
+}
+
+QFrame#LogCard {
+    /* Base style for cards, specific colors handled inline or by dynamic property */
     border-radius: 4px;
-    font-family: "Consolas", "Courier New", monospace;
-    font-size: 12px;
-    selection-background-color: #264f78;
 }
 """

@@ -1,0 +1,58 @@
+sequenceDiagram
+    autonumber
+    participant S as Student - Client App
+    participant API as Backend API - Referee
+    participant AI as AI Interviewer - LLM
+    participant DB as Database
+
+    box "Pre Exam Setup" #f9f9f9
+        S->>API: Auth and Request Exam Config
+        API-->>S: Return Exam Rules and Forbidden Objects
+        S->>S: Run System Check
+        S->>S: Environment Scan
+        S->>S: Face Calibration
+    end
+
+    box "Exam Loop" #e3f2fd
+        loop Every Frame
+            S->>S: Capture Frame and Audio
+            S->>S: Run Detection Models
+            
+            alt Anomaly Detected
+                S->>S: Mark Metadata Risk High
+            else Normal
+                S->>S: Mark Metadata Risk Low
+            end
+        end
+
+        loop Every Second
+            S->>API: Send Metadata Batch
+
+            Note right of API: Server Side Verification<br/>Checks bounds and timestamps<br/>Persistent violations
+
+            alt Risk Threshold Breached
+                S->>API: Upload Proof Snapshot
+                API->>DB: Log Violation
+                API-->>S: Show Warning
+            else Severe Violation
+                API-->>S: Pause Exam
+            end
+        end
+    end
+
+    box "AI Interview" #fff3e0
+        AI-->>S: Ask Question
+        S->>S: Record Audio
+        S->>API: Stream Audio
+        API->>AI: Transcribe and Process
+        AI-->>API: Generate Response
+        API-->>S: Play Response
+    end
+
+    box "Post Exam" #f3e5f5
+        S->>API: Submit Final Answers
+        API->>DB: Save Session Data
+        API->>AI: Auto Scoring
+        AI->>DB: Store Final Score
+        API-->>S: Completion Screen
+    end

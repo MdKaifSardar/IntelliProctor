@@ -1,0 +1,52 @@
+usecaseDiagram
+    actor "Student Candidate" as S
+    actor "Organization Admin" as A
+    actor "Human Proctor" as P
+    actor "AI System" as AI
+
+    package "Pre-Exam Phase" {
+        usecase "Register/Login" as UC1
+        usecase "System Compatibility Check\n(Camera/Mic/Bandwidth)" as UC2
+        usecase "360 Environment Scan" as UC3
+        usecase "Face Calibration" as UC4
+    }
+
+    package "Exam & Interview Phase" {
+        usecase "Take Exam\n(MCQ/Coding)" as UC5
+        usecase "Live AI Interview\n(Voice/Chat)" as UC6
+        usecase "Real-time Monitoring\n(Gaze/Phone/Person)" as UC7
+        usecase "Flag Anomalies" as UC8
+    }
+
+    package "Post-Exam Phase" {
+        usecase "Auto-Score Answers" as UC9
+        usecase "View Candidate Analytics" as UC10
+        usecase "Review Risk Logs\n(with Snapshots)" as UC11
+        usecase "Generate Final Report" as UC12
+    }
+
+    %% Relationships
+    S --> UC1
+    S --> UC2
+    S --> UC3
+    S --> UC4
+    S --> UC5
+    S --> UC6
+
+    A --> UC10
+    A --> UC11
+    A --> UC12
+
+    P --> UC11
+    P --> UC7
+
+    %% System Dependencies
+    UC7 ..> AI : Client-Side ML
+    UC8 ..> AI : Server-Side Logic
+    UC6 ..> AI : LLM Interviewer
+    UC9 ..> AI : Scoring Engine
+
+    %% Includes
+    UC5 ..> UC7 : <<include>>
+    UC6 ..> UC7 : <<include>>
+    UC7 ..> UC8 : <<triggers>>
